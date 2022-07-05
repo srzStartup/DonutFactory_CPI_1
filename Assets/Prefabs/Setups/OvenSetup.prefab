@@ -613,18 +613,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Oven
       objectReference: {fileID: 0}
-    - target: {fileID: 4137428644358538016, guid: 4400cdef334be4c45ae9e9cbf895eb5d, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137428644358538016, guid: 4400cdef334be4c45ae9e9cbf895eb5d, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137428644358538016, guid: 4400cdef334be4c45ae9e9cbf895eb5d, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4194094733909287548, guid: 4400cdef334be4c45ae9e9cbf895eb5d, type: 3}
       propertyPath: m_RootOrder
       value: 0

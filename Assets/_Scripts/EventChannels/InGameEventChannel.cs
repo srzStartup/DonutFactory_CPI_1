@@ -27,7 +27,7 @@ public class InGameEventChannel : ScriptableObject
     public UnityAction SaucedDonutReadyEvent;
     public UnityAction SaucedDonutConsumeByShowroomEvent;
 
-    //public UnityAction
+    public UnityAction SendingRawDonutsToPanSequenceStartEvent;
 
     public void RaiseGameStartedEvent()
     {
@@ -97,5 +97,10 @@ public class InGameEventChannel : ScriptableObject
     public void RaiseSaucedDonutConsumeByShowroomEvent()
     {
         SaucedDonutConsumeByShowroomEvent?.Invoke();
+    }
+
+    public void RaiseSendingRawDonutsToPanSequenceStartEvent()
+    {
+        SendingRawDonutsToPanSequenceStartEvent?.Invoke();
     }
 }

@@ -297,6 +297,7 @@ public class DonutRawPreparerController : SetupController<DonutRawPreparerSettin
         if (!cylinderPanSlotQueue.ToArray()[1].isEmpty)
         {
             canParticlePlay = false;
+            GameManager.Instance.inGameEventChannel.RaiseSendingRawDonutsToPanSequenceStartEvent();
         }
         else
         {

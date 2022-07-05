@@ -19,7 +19,9 @@ public class CameraController : Singleton<CameraController>
     [SerializeField] private InGameEventChannel inGameEventChannel;
 
     [Header("CPI camera position refrences")]
-    [SerializeField] private Transform donutPreparerCamRefPoint;
+    [SerializeField] private Transform donutPreparerCamRefPoint1;
+    [SerializeField] private Transform donutPreparerCamRefPoint2;
+    [SerializeField] private Transform ovenCamRefPoint;
 
     #region Camera Structure
 
@@ -41,16 +43,46 @@ public class CameraController : Singleton<CameraController>
         base.Awake();
 
         inGameEventChannel.PasteConsumeByDonutRawPreparerEvent += OnPasteConsumeByDonutRawPreparer;
+        inGameEventChannel.SendingRawDonutsToPanSequenceStartEvent += OnSendingRawDonutsToPanSequenceStart;
+        inGameEventChannel.PanWithRawDonutsConsumeByOvenEvent += OnPanWithRawDonutsConsumeByOven;
     }
 
     void OnDestroy()
     {
         inGameEventChannel.PasteConsumeByDonutRawPreparerEvent -= OnPasteConsumeByDonutRawPreparer;
+        inGameEventChannel.SendingRawDonutsToPanSequenceStartEvent -= OnSendingRawDonutsToPanSequenceStart;
+        inGameEventChannel.PanWithRawDonutsConsumeByOvenEvent -= OnPanWithRawDonutsConsumeByOven;
     }
 
     void OnPasteConsumeByDonutRawPreparer()
     {
-        FocusWithHolder(donutPreparerCamRefPoint.position, donutPreparerCamRefPoint.rotation.eulerAngles);
+        FocusWithHolder(donutPreparerCamRefPoint1.position, donutPreparerCamRefPoint1.rotation.eulerAngles);
+    }
+
+    void OnSendingRawDonutsToPanSequenceStart()
+    {
+        Tween camHolderMoveTween = _cameraHolder.DOMove(donutPreparerCamRefPoint2.position, 3f)
+            .SetSpeedBased()
+            .SetEase(Ease.Linear)
+            .OnComplete(() =>
+            {
+                _cameraParent.position = target.position;
+                _cameraHolder.DOLocalMove(cameraHolderOffset, 1f);
+                _cameraHolder.DOLocalRotate(Vector3.zero, 2f);
+                _cameraTransform.DOLocalMove(Vector3.zero, 1f)
+                    .OnComplete(() =>
+                    {
+                        _isFollowing = true;
+                        enabled = true;
+                    });
+            });
+
+        _cameraTransform.DOLocalMove(new Vector3(0f, 4f, -5f), camHolderMoveTween.Duration());
+    }
+
+    void OnPanWithRawDonutsConsumeByOven()
+    {
+        FocusWithHolder(ovenCamRefPoint.position, ovenCamRefPoint.rotation.eulerAngles);
     }
 
     void Start()
