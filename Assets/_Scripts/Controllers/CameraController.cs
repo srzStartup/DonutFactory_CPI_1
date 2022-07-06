@@ -22,6 +22,12 @@ public class CameraController : Singleton<CameraController>
     [SerializeField] private Transform donutPreparerCamRefPoint1;
     [SerializeField] private Transform donutPreparerCamRefPoint2;
     [SerializeField] private Transform ovenCamRefPoint;
+    [SerializeField] private Transform sauceSpillerCamRefPoint1;
+    [SerializeField] private Transform sauceSpillerCamRefPoint2;
+
+    [SerializeField] private Transform[] candySpillerCamPath;
+    [SerializeField] private Transform candySpillerTableCamRefPoint;
+    Vector3[] candySpillerPathVectors;
 
     #region Camera Structure
 
@@ -38,6 +44,9 @@ public class CameraController : Singleton<CameraController>
 
     private Vector3 targetPosition;
 
+    // CPI fields
+    bool candySpillerTriggeredOnce = false;
+
     protected override void Awake()
     {
         base.Awake();
@@ -45,6 +54,10 @@ public class CameraController : Singleton<CameraController>
         inGameEventChannel.PasteConsumeByDonutRawPreparerEvent += OnPasteConsumeByDonutRawPreparer;
         inGameEventChannel.SendingRawDonutsToPanSequenceStartEvent += OnSendingRawDonutsToPanSequenceStart;
         inGameEventChannel.PanWithRawDonutsConsumeByOvenEvent += OnPanWithRawDonutsConsumeByOven;
+        inGameEventChannel.PanWithBakedDonutsReadyEvent += OnPanWithBakedDonutsReady;
+        inGameEventChannel.PanWithBakedDonutsConsumeBySauceSpillerEvent += OnPanWithBakedDonutsConsumeBySauceSpiller;
+        inGameEventChannel.SendingBakedDonutsToSauceSequenceStartEvent += OnSendingBakedDonutsToSauceSequenceStart;
+        inGameEventChannel.SaucedDonutConsumeByCandySpillerEvent += OnSaucedDonutConsumeByCandySpiller;
     }
 
     void OnDestroy()
@@ -52,6 +65,10 @@ public class CameraController : Singleton<CameraController>
         inGameEventChannel.PasteConsumeByDonutRawPreparerEvent -= OnPasteConsumeByDonutRawPreparer;
         inGameEventChannel.SendingRawDonutsToPanSequenceStartEvent -= OnSendingRawDonutsToPanSequenceStart;
         inGameEventChannel.PanWithRawDonutsConsumeByOvenEvent -= OnPanWithRawDonutsConsumeByOven;
+        inGameEventChannel.PanWithBakedDonutsReadyEvent -= OnPanWithBakedDonutsReady;
+        inGameEventChannel.PanWithBakedDonutsConsumeBySauceSpillerEvent -= OnPanWithBakedDonutsConsumeBySauceSpiller;
+        inGameEventChannel.SendingBakedDonutsToSauceSequenceStartEvent -= OnSendingBakedDonutsToSauceSequenceStart;
+        inGameEventChannel.SaucedDonutConsumeByCandySpillerEvent -= OnSaucedDonutConsumeByCandySpiller;
     }
 
     void OnPasteConsumeByDonutRawPreparer()
@@ -64,18 +81,7 @@ public class CameraController : Singleton<CameraController>
         Tween camHolderMoveTween = _cameraHolder.DOMove(donutPreparerCamRefPoint2.position, 3f)
             .SetSpeedBased()
             .SetEase(Ease.Linear)
-            .OnComplete(() =>
-            {
-                _cameraParent.position = target.position;
-                _cameraHolder.DOLocalMove(cameraHolderOffset, 1f);
-                _cameraHolder.DOLocalRotate(Vector3.zero, 2f);
-                _cameraTransform.DOLocalMove(Vector3.zero, 1f)
-                    .OnComplete(() =>
-                    {
-                        _isFollowing = true;
-                        enabled = true;
-                    });
-            });
+            .OnComplete(() => BackToInitSettings());
 
         _cameraTransform.DOLocalMove(new Vector3(0f, 4f, -5f), camHolderMoveTween.Duration());
     }
@@ -85,11 +91,76 @@ public class CameraController : Singleton<CameraController>
         FocusWithHolder(ovenCamRefPoint.position, ovenCamRefPoint.rotation.eulerAngles);
     }
 
+    void OnPanWithBakedDonutsReady()
+    {
+        BackToInitSettings();
+    }
+
+    void OnPanWithBakedDonutsConsumeBySauceSpiller()
+    {
+        FocusWithHolder(sauceSpillerCamRefPoint1.position, sauceSpillerCamRefPoint1.rotation.eulerAngles);
+    }
+
+    void OnSaucedDonutConsumeByCandySpiller()
+    {
+        if (!candySpillerTriggeredOnce)
+        {
+            candySpillerTriggeredOnce = true;
+
+            FocusWithHolder(candySpillerCamPath[0].position, candySpillerCamPath[0].rotation.eulerAngles,
+                onComplete: (sequence) =>
+                {
+                    _cameraHolder.DOPath(candySpillerPathVectors, 5f, PathType.CatmullRom)
+                        .OnStart(() =>
+                        {
+                            Vector3 rotation = candySpillerCamPath[2].rotation.eulerAngles;
+                            rotation.x -= camTransform.rotation.eulerAngles.x;
+                            _cameraHolder.DORotate(rotation, 4f)
+                                .OnComplete(() =>
+                                {
+
+                                });
+                        });
+                });
+        }
+    }
+
+    void OnSendingBakedDonutsToSauceSequenceStart()
+    {
+        Sequence sequence = DOTween.Sequence();
+
+        Tween camHolderMoveTween = _cameraHolder.DOMove(sauceSpillerCamRefPoint2.position, 5f)
+            .SetSpeedBased()
+            .SetEase(Ease.Linear);
+        Tween camHolderRotationTween = _cameraHolder.DORotate(sauceSpillerCamRefPoint2.rotation.eulerAngles, camHolderMoveTween.Duration())
+            .SetSpeedBased();
+
+        Tween camLocalMoveTween = _cameraTransform.DOLocalMove(new Vector3(0f, 4f, -5f), camHolderMoveTween.Duration());
+
+        sequence.Join(camHolderMoveTween).Join(camHolderRotationTween).Join(camLocalMoveTween)
+            .OnComplete(() => StartCoroutine(BackToInitSettingsDelayed()));
+
+    }
+
+    IEnumerator BackToInitSettingsDelayed()
+    {
+        yield return Utils.GetWaitForSeconds(1f);
+        BackToInitSettings();
+    }
+
     void Start()
     {
         BuildStruct();
         cameraHolderOffset = _cameraHolder.localPosition;
         targetPosition = _cameraParent.position;
+
+        List<Vector3> vectorList = new List<Vector3>();
+        foreach (Transform pathPoint in candySpillerCamPath)
+        {
+            vectorList.Add(pathPoint.position);
+        }
+
+        candySpillerPathVectors = vectorList.ToArray();
     }
 
     void FixedUpdate()
@@ -141,6 +212,19 @@ public class CameraController : Singleton<CameraController>
             .SetDelay(delay)
             .OnStart(() => onStart?.Invoke(sequence))
             .OnComplete(() => onComplete?.Invoke(sequence));
+    }
+
+    public void BackToInitSettings()
+    {
+        _cameraParent.position = target.position;
+        _cameraHolder.DOLocalMove(cameraHolderOffset, 1f);
+        _cameraHolder.DOLocalRotate(Vector3.zero, 2f)
+            .OnComplete(() =>
+            {
+                _isFollowing = true;
+                enabled = true;
+            });
+        _cameraTransform.DOLocalMove(Vector3.zero, 1f);
     }
 
     public void FocusWithHolder(Vector3 position, Vector3 rotation, float delay = .0f, System.Action<Sequence> onStart = null, System.Action<Sequence> onComplete = null)

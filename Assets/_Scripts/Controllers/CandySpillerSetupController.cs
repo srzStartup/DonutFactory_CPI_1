@@ -35,6 +35,14 @@ public class CandySpillerSetupController : SetupController<CandySpillerSettings>
         readyDonuts = new Stack<Collectible>();
 
         _tableSlots.ForEach(tableSlot => tableSlotQueue.Enqueue(tableSlot));
+
+        if (isUnlocked)
+        {
+            foreach (Collider trigger in triggers)
+            {
+                trigger.enabled = true;
+            }
+        }
     }
 
     void Update()
@@ -83,6 +91,8 @@ public class CandySpillerSetupController : SetupController<CandySpillerSettings>
 
     void DetachItemFromPlayer(PlayerController player, TriggerCandyType type)
     {
+        GameManager.Instance.inGameEventChannel.RaiseSaucedDonutConsumeByCandySpillerEvent();
+
         ParticleSystem particle = null;
         string candy = "";
         Vector3 pos = Vector3.zero;

@@ -29,25 +29,25 @@ public class JSONDataManager : Singleton<JSONDataManager>
 
         if (GetData() == null)
         {
-            _data.totalMoney = 0;
-            _data.onboardingDone = false;
-            _data.playerCapacityLevel = 1;
-            _data.playerSpeedLevel = 1;
+            _data.totalMoney = 999999;
+            _data.onboardingDone = true;
+            _data.playerCapacityLevel = 3;
+            _data.playerSpeedLevel = 3;
 
             // 0 3 6
 
             _data.setups = new List<SetupControllerModel>()
             {
                 new SetupControllerModel(0, 1, 1, SetupControllerType.DonutRawPreparer, 0, true),
-                new SetupControllerModel(1, 1, 1, SetupControllerType.DonutRawPreparer, -1, false),
-                new SetupControllerModel(2, 1, 1, SetupControllerType.DonutRawPreparer, -1, false),
+                new SetupControllerModel(1, 1, 1, SetupControllerType.DonutRawPreparer, 0, true),
+                new SetupControllerModel(2, 1, 1, SetupControllerType.DonutRawPreparer, 0, true),
                 new SetupControllerModel(3, 1, 1, SetupControllerType.Oven, 0, true),
-                new SetupControllerModel(4, 1, 1, SetupControllerType.Oven, -1, false),
-                new SetupControllerModel(5, 1, 1, SetupControllerType.Oven, -1, false),
-                new SetupControllerModel(6, 1, 1, SetupControllerType.SauceSpiller,0, true),
-                new SetupControllerModel(7, 1, 1, SetupControllerType.SauceSpiller, -1, false),
-                new SetupControllerModel(8, 1, 1, SetupControllerType.SauceSpiller, -1, false),
-                new SetupControllerModel(9, 1, 1, SetupControllerType.CandySpiller, -1, false),
+                new SetupControllerModel(4, 1, 1, SetupControllerType.Oven, 0, true),
+                new SetupControllerModel(5, 1, 1, SetupControllerType.Oven, 0, true),
+                new SetupControllerModel(6, 1, 1, SetupControllerType.SauceSpiller, 0, true),
+                new SetupControllerModel(7, 1, 1, SetupControllerType.SauceSpiller, 0, true),
+                new SetupControllerModel(8, 1, 1, SetupControllerType.SauceSpiller, 0, true),
+                new SetupControllerModel(9, 1, 1, SetupControllerType.CandySpiller, 0, true),
             };
         }
 

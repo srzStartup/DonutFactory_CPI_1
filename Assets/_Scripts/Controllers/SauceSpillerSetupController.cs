@@ -107,7 +107,14 @@ public class SauceSpillerSetupController : SetupController<SauceSpillerSettings>
     void OnDetachItemStart(Collectible panAsCollectible, Tween panTween)
     {
         GameManager.Instance.inGameEventChannel.RaisePanWithBakedDonutsConsumeBySauceSpillerEvent();
+        StartCoroutine(RaiseEventDelayed());
         //panAsCollectible.transform.DORotate(panRefPoint.rotation.eulerAngles, panTween.Duration());
+    }
+
+    IEnumerator RaiseEventDelayed()
+    {
+        yield return Utils.GetWaitForSeconds(1f);
+        GameManager.Instance.inGameEventChannel.RaiseSendingBakedDonutsToSauceSequenceStartEvent();
     }
 
     void OnDetachItemComplete(Collectible panAsCollectible, Tween panTween)
@@ -119,7 +126,7 @@ public class SauceSpillerSetupController : SetupController<SauceSpillerSettings>
             if (pan)
             {
                 Vector3 initScale = pan.transform.localScale;
-                pan.transform.DOBlendableScaleBy(Vector3.zero, 2f)
+                pan.transform.DOScale(Vector3.zero, 2f)
                     .OnStart(() =>
                     {
                         currentPan = pan;
