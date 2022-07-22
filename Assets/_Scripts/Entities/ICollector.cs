@@ -6,7 +6,7 @@ using DG.Tweening;
 public interface ICollector
 {
     public void Collect(Collectible collectible);
-    public (Collectible, Sequence) DetachItem(CollectibleType collectibleType, Vector3 worldPosition, Transform toParent = null, Vector3? worldRotation = null,
+    public (Collectible, Sequence) DetachItem(CollectibleType collectibleType, Vector3 worldPosition, Transform toParent = null, Vector3? worldRotation = null, bool noRotation = false,
         System.Action<Collectible, Sequence> onStart = null, System.Action<Collectible, Sequence> onComplete = null, System.Func<Collectible, float, Tween> tweenCallback = null);
 }
 

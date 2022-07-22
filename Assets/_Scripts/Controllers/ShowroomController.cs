@@ -120,8 +120,8 @@ public class ShowroomController : MonoBehaviour
         float timePosition = 0f;
         Sequence sequence = DOTween.Sequence();
 
-        int moneyCount = totalAmount / 5;
-        int remainder = totalAmount % 5;
+        int moneyCount = totalAmount / 2;
+        int remainder = totalAmount % 2;
         for (int i = 0; i < moneyCount; i++)
         {
             Transform nextMoneySlot = _moneySlotQueue.Dequeue();

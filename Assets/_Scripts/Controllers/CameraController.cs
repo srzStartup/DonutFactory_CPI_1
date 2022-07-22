@@ -57,7 +57,7 @@ public class CameraController : Singleton<CameraController>
         inGameEventChannel.PanWithBakedDonutsReadyEvent += OnPanWithBakedDonutsReady;
         inGameEventChannel.PanWithBakedDonutsConsumeBySauceSpillerEvent += OnPanWithBakedDonutsConsumeBySauceSpiller;
         inGameEventChannel.SendingBakedDonutsToSauceSequenceStartEvent += OnSendingBakedDonutsToSauceSequenceStart;
-        inGameEventChannel.SaucedDonutConsumeByCandySpillerEvent += OnSaucedDonutConsumeByCandySpiller;
+        //inGameEventChannel.SaucedDonutConsumeByCandySpillerEvent += OnSaucedDonutConsumeByCandySpiller;
     }
 
     void OnDestroy()
@@ -68,7 +68,7 @@ public class CameraController : Singleton<CameraController>
         inGameEventChannel.PanWithBakedDonutsReadyEvent -= OnPanWithBakedDonutsReady;
         inGameEventChannel.PanWithBakedDonutsConsumeBySauceSpillerEvent -= OnPanWithBakedDonutsConsumeBySauceSpiller;
         inGameEventChannel.SendingBakedDonutsToSauceSequenceStartEvent -= OnSendingBakedDonutsToSauceSequenceStart;
-        inGameEventChannel.SaucedDonutConsumeByCandySpillerEvent -= OnSaucedDonutConsumeByCandySpiller;
+        //inGameEventChannel.SaucedDonutConsumeByCandySpillerEvent -= OnSaucedDonutConsumeByCandySpiller;
     }
 
     void OnPasteConsumeByDonutRawPreparer()
@@ -101,13 +101,14 @@ public class CameraController : Singleton<CameraController>
         FocusWithHolder(sauceSpillerCamRefPoint1.position, sauceSpillerCamRefPoint1.rotation.eulerAngles);
     }
 
-    void OnSaucedDonutConsumeByCandySpiller()
+    public void OnSaucedDonutConsumeByCandySpiller(PlayerController player)
     {
         if (!candySpillerTriggeredOnce)
         {
             candySpillerTriggeredOnce = true;
 
             FocusWithHolder(candySpillerCamPath[0].position, candySpillerCamPath[0].rotation.eulerAngles,
+                rotDuration: 1.5f,
                 onComplete: (sequence) =>
                 {
                     _cameraHolder.DOPath(candySpillerPathVectors, 5f, PathType.CatmullRom)
@@ -118,7 +119,7 @@ public class CameraController : Singleton<CameraController>
                             _cameraHolder.DORotate(rotation, 4f)
                                 .OnComplete(() =>
                                 {
-
+                                    StartCoroutine(BackToInitSettingsDelayed(.5f));
                                 });
                         });
                 });
@@ -138,13 +139,13 @@ public class CameraController : Singleton<CameraController>
         Tween camLocalMoveTween = _cameraTransform.DOLocalMove(new Vector3(0f, 4f, -5f), camHolderMoveTween.Duration());
 
         sequence.Join(camHolderMoveTween).Join(camHolderRotationTween).Join(camLocalMoveTween)
-            .OnComplete(() => StartCoroutine(BackToInitSettingsDelayed()));
+            .OnComplete(() => StartCoroutine(BackToInitSettingsDelayed(.25f)));
 
     }
 
-    IEnumerator BackToInitSettingsDelayed()
+    IEnumerator BackToInitSettingsDelayed(float duration = 1f)
     {
-        yield return Utils.GetWaitForSeconds(1f);
+        yield return Utils.GetWaitForSeconds(duration);
         BackToInitSettings();
     }
 
@@ -216,26 +217,33 @@ public class CameraController : Singleton<CameraController>
 
     public void BackToInitSettings()
     {
+        _cameraHolder.parent = null;
         _cameraParent.position = target.position;
-        _cameraHolder.DOLocalMove(cameraHolderOffset, 1f);
-        _cameraHolder.DOLocalRotate(Vector3.zero, 2f)
+        //_cameraHolder.parent = null;
+        _cameraHolder.DOMove(_cameraParent.TransformPoint(cameraHolderOffset), 1f);
+        _cameraHolder.DORotate(Vector3.zero, 2f)
             .OnComplete(() =>
             {
+                _cameraHolder.parent = _cameraParent;
                 _isFollowing = true;
                 enabled = true;
             });
         _cameraTransform.DOLocalMove(Vector3.zero, 1f);
     }
 
-    public void FocusWithHolder(Vector3 position, Vector3 rotation, float delay = .0f, System.Action<Sequence> onStart = null, System.Action<Sequence> onComplete = null)
+    public void FocusWithHolder(Vector3 position, Vector3 rotation, float rotDuration = -1f, float delay = .0f, System.Action<Sequence> onStart = null, System.Action<Sequence> onComplete = null)
     {
         float duration = 1f;
+        if (rotDuration <= 0f)
+        {
+            rotDuration = duration;
+        }
         Sequence sequence = DOTween.Sequence();
 
         Tween camHolderMoveTween = _cameraHolder.DOMove(position, duration)
             .SetEase(Ease.InQuad);
 
-        Tween camRotationTween = _cameraHolder.DORotate(rotation - camTransform.rotation.eulerAngles, duration);
+        Tween camRotationTween = _cameraHolder.DORotate(rotation - camTransform.rotation.eulerAngles, rotDuration);
 
         sequence
             .Join(camHolderMoveTween)

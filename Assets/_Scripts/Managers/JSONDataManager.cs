@@ -31,7 +31,7 @@ public class JSONDataManager : Singleton<JSONDataManager>
         {
             _data.totalMoney = 999999;
             _data.onboardingDone = true;
-            _data.playerCapacityLevel = 3;
+            _data.playerCapacityLevel = 5;
             _data.playerSpeedLevel = 3;
 
             // 0 3 6

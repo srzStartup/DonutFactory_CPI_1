@@ -42,12 +42,62 @@ public class CandySpillerSetupController : SetupController<CandySpillerSettings>
             {
                 trigger.enabled = true;
             }
+
+            CollectibleType[] types = new CollectibleType[] { CollectibleType.DonutWithBonbon, CollectibleType.DonutWithSprinkles, CollectibleType.DonutWithOreo };
+            string[] donutSauces = new string[] { "DonutBakedChoco", "DonutBakedStrawberry", "DonutBakedBanana" };
+            int typeIndex = 0;
+
+            for (int i = 0; i < 63; i++)
+            {
+                Transform slot = tableSlotQueue.Dequeue();
+
+                GameObject donutGO = ObjectPooler.Instance.SpawnFromPool("donut", slot.position, Quaternion.identity);
+                Collectible donut = donutGO.GetComponent<Collectible>();
+                CollectibleType type = types[typeIndex];
+                donut.type = type;
+
+                Vector3 slotPos = slot.position;
+                slotPos.y += (slot.InverseTransformPoint(new Vector3(0f, donut.topPoint.position.y, 0f)).y) * slot.childCount;
+                donut.transform.parent = slot;
+                donut.transform.position = slotPos;
+
+
+                donutGO.transform.Find("DonutRaw").gameObject.SetActive(false);
+                donutGO.transform.Find("DonutBaked").gameObject.SetActive(true);
+                donutGO.transform.Find(donutSauces[UnityEngine.Random.Range(0, donutSauces.Length)]).gameObject.SetActive(true);
+                donutGO.transform.Find(GetCandyChild(type)).gameObject.SetActive(true);
+                readyDonuts.Push(donut);
+
+                typeIndex++;
+                if (typeIndex == 3) typeIndex = 0;
+                tableSlotQueue.Enqueue(slot);
+            }
         }
+    }
+
+    string GetCandyChild(CollectibleType type)
+    {
+        string candyChildName = "";
+
+        switch (type)
+        {
+            case CollectibleType.DonutWithBonbon:
+                candyChildName = "Candy1";
+                break;
+            case CollectibleType.DonutWithSprinkles:
+                candyChildName = "Candy2";
+                break;
+            case CollectibleType.DonutWithOreo:
+                candyChildName = "Oreo";
+                break;
+        }
+
+        return candyChildName;
     }
 
     void Update()
     {
-        conveyorLike.Rotate(Vector3.down, .3f);
+        conveyorLike.Rotate(Vector3.down, .75f);
     }
 
     public void OnPlayerTriggerStayCandy1(PlayerController player)
@@ -91,7 +141,7 @@ public class CandySpillerSetupController : SetupController<CandySpillerSettings>
 
     void DetachItemFromPlayer(PlayerController player, TriggerCandyType type)
     {
-        GameManager.Instance.inGameEventChannel.RaiseSaucedDonutConsumeByCandySpillerEvent();
+        //GameManager.Instance.inGameEventChannel.RaiseSaucedDonutConsumeByCandySpillerEvent();
 
         ParticleSystem particle = null;
         string candy = "";

@@ -112,6 +112,7 @@ public class PlayerController : Singleton<PlayerController>, ICollector
         //GameManager.Instance.inGameEventChannel.RaisePlayerTaskStateChangedEvent(this.taskState);
     }
 
+    int pairing;
     public void Collect(Collectible collectible)
     {
         if (_stackManager.GetHoldCount() >= stackCapacity)
@@ -120,12 +121,30 @@ public class PlayerController : Singleton<PlayerController>, ICollector
         Vector3 currentStackPosition = nextStackPosition;
         collectible.transform.parent = loadsParent;
 
-        nextStackPosition.y += loadsParent.InverseTransformPoint(collectible.topPoint.position).y - loadsParent.InverseTransformPoint(collectible.transform.position).y;
+        if (Collectible.IsDonut(collectible))
+        {
+            if (pairing++ == 0)
+            {
+                currentStackPosition.x -= .8f;
+            }
+            else
+            {
+                currentStackPosition.x += .8f;
+                pairing = 0;
+
+                nextStackPosition.y += loadsParent.InverseTransformPoint(collectible.topPoint.position).y - loadsParent.InverseTransformPoint(collectible.transform.position).y;
+            }
+        }
+        else
+        {
+            nextStackPosition.y += loadsParent.InverseTransformPoint(collectible.topPoint.position).y - loadsParent.InverseTransformPoint(collectible.transform.position).y;
+        }
 
         Sequence sequence = DOTween.Sequence();
 
-        Tween localMoveTween = collectible.transform.DOLocalMove(currentStackPosition, .25f)
-            .OnStart(() => 
+        Tween localMoveTween = collectible.transform.DOLocalJump(currentStackPosition, 2f, 1, .25f)
+        //Tween localMoveTween = collectible.transform.DOLocalMove(currentStackPosition, .25f)
+            .OnStart(() =>
             {
                 _stackManager.Push(collectible);
                 Taptic.Light();
@@ -137,12 +156,26 @@ public class PlayerController : Singleton<PlayerController>, ICollector
                     ThrowMaxText();
                 }
             });
-        Tween localRotationTween = collectible.transform.DOLocalRotate(Vector3.zero, .25f);
 
-        sequence.Join(localMoveTween).Join(localRotationTween);
+        //Tween localRotationTween = collectible.transform.DOLocalRotate(Vector3.zero, .25f);
+
+        if (Collectible.IsDonut(collectible))
+        {
+            Vector3 spin = new Vector3(-360f, 0f, 0f);
+            Tween donutLocalRotationTween = collectible.transform.DOLocalRotate(spin, .25f, RotateMode.LocalAxisAdd);
+            sequence.Join(donutLocalRotationTween);
+            //sequence.Insert(0.1f, localRotationTween);
+        }
+        else
+        {
+            Tween localRotationTween = collectible.transform.DOLocalRotate(Vector3.zero, .25f);
+            sequence.Join(localRotationTween);
+        }
+
+        sequence.Join(localMoveTween)/*.Join(localRotationTween)*/;
     }
 
-    public (Collectible, Sequence) DetachItem(CollectibleType collectibleType, Vector3 worldPosition, Transform toParent = null, Vector3? worldRotation = null,
+    public (Collectible, Sequence) DetachItem(CollectibleType collectibleType, Vector3 worldPosition, Transform toParent = null, Vector3? worldRotation = null, bool noRotation = false,
         System.Action<Collectible, Sequence> onStart = null, System.Action<Collectible, Sequence> onComplete = null, System.Func<Collectible, float, Tween> tweenCallback = null)
     {
         if (_stackManager.Count == 0)
@@ -157,10 +190,10 @@ public class PlayerController : Singleton<PlayerController>, ICollector
         else if (collectibleType == CollectibleType.DonutSauced)
         {
             reqCollectible = _stackManager.items
-                .FindLast(collectible => collectible.type == CollectibleType.DonutSaucedCaramel || 
+                .FindLast(collectible => collectible.type == CollectibleType.DonutSaucedCaramel ||
                     collectible.type == CollectibleType.DonutSaucedChocolate ||
-                    collectible.type == CollectibleType.DonutSaucedStrawberry || 
-                    collectible.type == CollectibleType.DonutWithBonbon || 
+                    collectible.type == CollectibleType.DonutSaucedStrawberry ||
+                    collectible.type == CollectibleType.DonutWithBonbon ||
                     collectible.type == CollectibleType.DonutWithSprinkles ||
                     collectible.type == CollectibleType.DonutWithOreo);
         }
@@ -180,7 +213,7 @@ public class PlayerController : Singleton<PlayerController>, ICollector
 
         if (reqCollectible)
         {
-            nextStackPosition.y -= loadsParent.InverseTransformPoint(reqCollectible.topPoint.position).y - loadsParent.InverseTransformPoint(reqCollectible.transform.position).y; 
+            nextStackPosition.y -= loadsParent.InverseTransformPoint(reqCollectible.topPoint.position).y - loadsParent.InverseTransformPoint(reqCollectible.transform.position).y;
 
             sequence = DOTween.Sequence();
             int index = _stackManager.IndexOf(reqCollectible);
@@ -198,28 +231,50 @@ public class PlayerController : Singleton<PlayerController>, ICollector
                 collectibleMoveTween = reqCollectible.transform.DOMove(worldPosition, animationLifeTime);
             }
 
-            collectibleMoveTween.OnStart(() => 
+            collectibleMoveTween.OnStart(() =>
+            {
+                if (noRotation)
+                {
+                    reqCollectible.ResetAllNoRotation();
+                }
+                else
                 {
                     reqCollectible.ResetAll();
+                }
 
-                    List<Collectible> rest = _stackManager.FromRange(index);
+                List<Collectible> rest = _stackManager.FromRange(index);
 
-                    //if (collectibleType == CollectibleType.PanWithRawDonuts || collectibleType == CollectibleType.PanWithBakedDonuts || collectibleType == CollectibleType.Pan)
-                    //{
-                    //    rest = _stackManager.FromRange(0);
-                    //}
+                //if (collectibleType == CollectibleType.PanWithRawDonuts || collectibleType == CollectibleType.PanWithBakedDonuts || collectibleType == CollectibleType.Pan)
+                //{
+                //    rest = _stackManager.FromRange(0);
+                //}
 
-                    float diff = loadsParent.InverseTransformPoint(reqCollectible.topPoint.position).y - loadsParent.InverseTransformPoint(reqCollectible.transform.position).y;
+                float diff = loadsParent.InverseTransformPoint(reqCollectible.topPoint.position).y - loadsParent.InverseTransformPoint(reqCollectible.transform.position).y;
 
-                    Sequence reOrderSequence = DOTween.Sequence();
-                    foreach (Collectible collectible in rest)
-                    {
-                        reOrderSequence.Join(collectible.transform.DOLocalMoveY(loadsParent.InverseTransformPoint(collectible.transform.position).y - diff, animationLifeTime));
-                    }
-                })
-                .OnComplete(() => reqCollectible.transform.parent = toParent);
+                Sequence reOrderSequence = DOTween.Sequence();
+                foreach (Collectible collectible in rest)
+                {
+                    reOrderSequence.Join(collectible.transform.DOLocalMoveY(loadsParent.InverseTransformPoint(collectible.transform.position).y - diff, animationLifeTime));
+                }
+            })
+            .OnComplete(() => reqCollectible.transform.parent = toParent);
 
-            Tween collectibleRotationTween = reqCollectible.transform.DORotate(absWorldRotation, animationLifeTime);
+            Vector3 rot = reqCollectible.transform.rotation.eulerAngles - absWorldRotation;
+
+            if (Collectible.IsDonut(reqCollectible))
+            {
+                Vector3 spin = new Vector3(720f, 0f, 0f);
+                //Tween donutLocalRotationTween = reqCollectible.transform.DORotate(spin, animationLifeTime, RotateMode.WorldAxisAdd);
+                //sequence.Join(donutLocalRotationTween);
+                rot += spin;
+            }
+            else
+            {
+                rot = absWorldRotation;
+            }
+
+
+            Tween collectibleRotationTween = reqCollectible.transform.DORotate(rot, animationLifeTime, RotateMode.WorldAxisAdd);
 
             sequence.Join(collectibleMoveTween).Join(collectibleRotationTween);
 
@@ -237,7 +292,7 @@ public class PlayerController : Singleton<PlayerController>, ICollector
 
                 onStart?.Invoke(reqCollectible, sequence);
             })
-                .OnComplete(() => 
+                .OnComplete(() =>
                 {
                     if (stackManager.empty)
                         nextStackPosition = Vector3.zero;
@@ -281,7 +336,7 @@ public class PlayerController : Singleton<PlayerController>, ICollector
             Tween rotationTween = pan.transform.DOLocalRotate(Vector3.zero, tweenDuration);
 
             sequence.Join(moveTween).Join(rotationTween)
-                .OnStart(() => 
+                .OnStart(() =>
                 {
                     if (_stackManager.GetHoldCount() == stackCapacity)
                     {

@@ -14,12 +14,34 @@ public class Collectible : MonoBehaviour, IStackable
     [SerializeField] private int _holds;
     public int holds => _holds;
 
+    public static bool IsDonut(Collectible collectible)
+    {
+        return
+            collectible.type == CollectibleType.DonutBaked ||
+            collectible.type == CollectibleType.DonutRaw ||
+            collectible.type == CollectibleType.DonutSauced ||
+            collectible.type == CollectibleType.DonutSaucedCaramel ||
+            collectible.type == CollectibleType.DonutSaucedChocolate ||
+            collectible.type == CollectibleType.DonutSaucedStrawberry ||
+            collectible.type == CollectibleType.DonutSaucedWithoutCandy ||
+            collectible.type == CollectibleType.DonutWithBonbon ||
+            collectible.type == CollectibleType.DonutWithOreo ||
+            collectible.type == CollectibleType.DonutWithSprinkles;
+
+    }
+
     public void ResetAll()
     {
         isTargeted = false;
         isCollected = false;
 
         transform.rotation = Quaternion.identity;
+    }
+
+    public void ResetAllNoRotation()
+    {
+        isTargeted = false;
+        isCollected = false;
     }
 
     public void SetWorth(int worth)

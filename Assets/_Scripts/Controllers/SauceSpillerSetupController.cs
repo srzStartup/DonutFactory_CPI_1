@@ -18,6 +18,9 @@ public class SauceSpillerSetupController : SetupController<SauceSpillerSettings>
     Pan currentPan;
     Stack<Collectible> readyDonuts;
 
+    [SerializeField] private string typeAsString;
+    [SerializeField] private CollectibleType collectibleType;
+
     float period = .75f;
     float nextTime;
     float startTime;
@@ -28,13 +31,45 @@ public class SauceSpillerSetupController : SetupController<SauceSpillerSettings>
     float detachCooldown = .5f;
     float elapsedTime_DETACH;
 
-    void OnEnable()
+    protected override void Start()
     {
+        base.Start();
+
         donutQueue = new Queue<Collectible>();
         slotQueue = new Queue<Transform>();
         readyDonuts = new Stack<Collectible>();
 
         _slots.ForEach(slot => slotQueue.Enqueue(slot));
+
+        for (int i = 0; i < 30; i++)
+        {
+            Transform slot = slotQueue.Dequeue();
+
+            GameObject donutGO = ObjectPooler.Instance.SpawnFromPool("donut", slot.position, Quaternion.identity);
+            Collectible donut = donutGO.GetComponent<Collectible>();
+            donut.type = collectibleType;
+
+            donut.transform.parent = slot;
+            Vector3 slotPos = Vector3.zero;
+
+            if (slot.childCount == 1)
+            {
+                slotPos = Vector3.zero;
+            }
+            else
+            {
+                slotPos.y += (slot.InverseTransformPoint(donut.topPoint.position).y - slot.InverseTransformPoint(donut.transform.position).y) * (slot.childCount - 1);
+            }
+
+            donut.transform.localPosition = slotPos;
+
+            donutGO.transform.Find("DonutRaw").gameObject.SetActive(false);
+            donutGO.transform.Find("DonutBaked").gameObject.SetActive(true);
+            donutGO.transform.Find(typeAsString).gameObject.SetActive(true);
+            readyDonuts.Push(donut);
+
+            slotQueue.Enqueue(slot);
+        }
     }
 
     void OnTriggerEnter(Collider other)
